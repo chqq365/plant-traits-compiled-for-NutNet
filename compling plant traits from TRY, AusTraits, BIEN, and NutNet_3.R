@@ -1,4 +1,3 @@
-test
 ## compiling trait data from TRY (version 5), AusTraits(2.1.2), BIEN(version 1.2.5)
 ## and Nutnet (leaf traits)
 ## add root traits too from Groot (did not include due to lack of standardized species names)
