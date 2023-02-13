@@ -1,11 +1,9 @@
-## compiling trait data from TRY (version 5), AusTraits(2.1.2), BIEN(version 1.2.5)
+## compiling trait data from TRY (version 6), AusTraits(2.1.2), BIEN(version 1.2.5)
 ## and Nutnet (leaf traits)
 ## add root traits too from Groot (did not include due to lack of standardized species names)
 
-## for TRY, data were downloaded in three separate periods
-## load the leaf nutrient data including leaf C, N, P, K from TRY. Downloaded on 19 April 2021 (Request No: 14610).
-## load specific leaf area, leaf dry matter content, plant height, aboveground biomass, growth form. Downloaded on 2021-01-18 (Request No: 13322)
-## load seed mass data from TRY. Downloaded on 31 May 2022 (request number: 21277)
+## for TRY, data (Height, LA, Leaf C, Leaf N, Leaf P,  Seed dry mass, SLA) were downloaded 
+## February 13 2013 (Request No: 24964)
 
 ## focus on Height, LA, Leaf C, Leaf N, Leaf P,  Seed dry mass, SLA
 rm(list=ls())
@@ -19,7 +17,7 @@ library(FD)
 library(BIEN)
 library(austraits) 
 # set the working directory 
-setwd("H:/biodiversity and stability facets/R/R27/")
+setwd("H:/plant traits for NutNet/raw data/")
 
 ###################################################################################################
 ########################load and sort the trait data from the TRY##################################
@@ -28,7 +26,7 @@ setwd("H:/biodiversity and stability facets/R/R27/")
 tr<-fread("leaf traits from TRY.txt")
 unique(tr$TraitName)
 ## load the leaf area, SLA, height, biomass
-tr.a<-fread("traits from TRY.txt", header = T, sep = "\t", dec = ".", quote = "", data.table = T)
+tr.a<-fread("traits from TRY.txt", header = T, sep = "/t", dec = ".", quote = "", data.table = T)
 unique(tr.a$TraitName)
 ## load seed mass data 
 tr.b<-fread("seed_mass_21277.txt")
@@ -364,7 +362,7 @@ ggplot(all.traits1)+geom_histogram(aes(x=StdValue))+facet_wrap(~TraitName1, scal
 ###################################################################################################
 ################################# variance component analyses########################################
 ###################################################################################################
-
+all.traits1<- fread("H:/plant traits for NutNet/trait and nutnet data/combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv")
 check.sample.size<-all.traits1%>%
   mutate(sample.location=paste(as.character(Latitude), as.character(Longitude), sep="_"))%>%group_by(standard_taxon, TraitName1, sample.location, continent, country)%>%
   summarise(N=length(StdValue))%>%filter(N>=10)%>%mutate(id=paste0(standard_taxon, TraitName1, sample.location))
