@@ -481,8 +481,8 @@ sp.and.genus.level.traits.nutnet<-sp.level.trait.nutnet%>%mutate(data.type="trai
 table(sp.and.genus.level.traits.nutnet$TraitName1)
 
 # save the data 
-# save(sp.and.genus.level.traits.nutnet, file="species and genus level traits from TRY, Aus, and BIEN for NutNet species.rdata")
-# fwrite(sp.and.genus.level.traits.nutnet, file="species and genus level traits from TRY, Aus, and BIEN for NutNet species.csv")
+# save(sp.and.genus.level.traits.nutnet, file="species and genus level traits from TRY, Aus, BIEN, and NutNet for NutNet species.rdata")
+# fwrite(sp.and.genus.level.traits.nutnet, file="species and genus level traits from TRY, Aus, BIEN, and NutNet for NutNet species.csv")
 
 ###################################################################################################
 ######################check trait values, distributions, and correlations##########################
