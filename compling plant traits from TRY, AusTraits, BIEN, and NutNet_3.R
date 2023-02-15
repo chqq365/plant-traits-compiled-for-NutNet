@@ -310,10 +310,10 @@ au3$Latitude<-as.numeric(au3$Latitude)
 au3$Longitude<-as.numeric(au3$Longitude)
 au3$Altitude<-as.numeric(au3$Altitude)
 
-all.traits<-tr6%>%bind_rows(y=au3)%>%bind_rows(y=tr.bien3)%>%bind_rows(y=l.nutnet3)%>%unique()
+all.traits<-tr6%>%bind_rows(y=au3)%>%bind_rows(y=tr.bien3)%>%bind_rows(y=l.nutnet3)%>%unique()  
+
 # add continent information to the data using the following function
 # https://stackoverflow.com/questions/21708488/get-country-and-continent-from-longitude-and-latitude-point-in-r
-
 library(rworldmap) 
 library(sp)
 
@@ -522,7 +522,7 @@ pca.r<-PCA(sp.nutnet.w.na.omit[,c("Height", "LA", "Leaf C", "Leaf N", "Leaf P", 
 summary(pca.r)## 
 # visualize 
 fviz_pca_var(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = NULL)+theme_bw(base_size=18)
-(pp2<-fviz_pca_biplot(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = paste0("PCA based on ", nrow(sp.nutnet.w.na.omit), " species having all 7 traits (in total 3322 species occurred)" ))+theme_bw(base_size=18))
+(pp2<-fviz_pca_biplot(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = paste0("PCA based on ", nrow(sp.nutnet.w.na.omit), " species having all 7 traits (in total ", length(all.spp), " species occurred)"))+theme_bw(base_size=18))
 # ggsave(pp2, width=13.3,height=6.64, file="pca among traits.png")
 
 # there are two sets of traits, related to size and leaf traits 
