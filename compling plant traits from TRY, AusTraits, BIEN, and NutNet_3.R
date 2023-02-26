@@ -204,8 +204,7 @@ colnames(l.nutnet)
 l.nutnet1<-l.nutnet%>%
   select("continent",   "country", "region",  "site_code", "block",  "plot", "trt", "year", "latitude",   "longitude", "Taxon", "leaf_pct_N", "leaf_pct_C", "leaf_pct_P",  "leaf_pct_K", "SLA_v2" )%>%
   pivot_longer(cols = leaf_pct_N:SLA_v2)%>%
-  arrange(name)%>% mutate(units=rep(c("mm^2 / g", "%","%","%","%"), each=2664))%>%
-  filter(!is.na(value))%>%mutate(database="NutNet")%>%unique()
+  arrange(name)%>% mutate(units=ifelse(name %in% c("SLA_v2"), "mm^2 / g", "%"))%>%filter(!is.na(value))%>%mutate(database="NutNet")%>%unique()
 # also add root traits 
 l.nut.root<-read.csv(paste0(dir.data, "root-biomass-Cleand-et-al-2019.csv"))
 # seems like root biomass data at the community level, this does not help. 
