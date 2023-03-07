@@ -23,6 +23,7 @@ library(austraits)
 
 library(rworldmap) 
 library(sp)
+
 # set the working directory 
 dir.data<-"H:/plant traits for NutNet/raw data/"
 dir.graphs<-"H:/plant traits for NutNet/graphs/"
