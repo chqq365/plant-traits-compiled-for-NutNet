@@ -1,6 +1,6 @@
 # Functional traits compilied from global databases for NutNet species 
 
-# all data needed can be downloanded from here (as well as output files) https://drive.google.com/drive/folders/1w-I_P7i_RrtchmRAgZ3E0orZHcJfOQ8f?usp=sharing
+# all data needed can be downloanded from here (as well as output files) https://www.dropbox.com/scl/fo/sj6kwbrfppdsiqx2mzk75/h?dl=0&rlkey=f6idfy0nvevnuv6yy3sgw9a4i
 
 
 # this R file generates 2 important output files 
