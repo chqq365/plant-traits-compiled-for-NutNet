@@ -8,18 +8,22 @@ library(data.table);library(tidyverse)
 ###################################################################################################
 #### check trait names 
 # set the working directory 
-setwd("H:/plant traits for NutNet/raw data/")
+setwd("C:/Users/chqq3/work/plant traits compiled for NutNet/raw data/")
 
 tn<-fread("trait list.txt", header = T, sep = "\t", dec = ".", quote = "", data.table = T)
 colnames(tn)
+check.leaf<-tn%>%filter(grepl("leaf", Trait))
+
 tn1<-tn[order(tn$AccSpecNum, decreasing = TRUE), ]
 tn_30<-tn1[1:30,]
+check.ldmc<-tn1%>%filter(grepl("LDMC", Trait))
+check.ldmc<-tn1%>%filter(Trait=="Leaf dry mass per leaf fresh mass (leaf dry matter content, LDMC)")
+
 # it seems that most traits with highest number of species are categorical traits 
 # maybe better to focus on continuous traits 
 ## get trait id 
 paste0(tn_30$TraitID, collapse=",")
 ## 3400,3401,42,38,43,17,22,759,3106,37,31,26,218,59,28,8,819,95,343,29,154,213,16,3117,3096,14,3113,4,207,98
-
 
 tn_30.leaf<-tn_30[grepl("leaf", tn_30$Trait), ]## 4 leaf traits
 tn_30.leaf$Trait
