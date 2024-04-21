@@ -4,7 +4,7 @@
 
 ## for TRY, data (Height, LA, Leaf C, Leaf N, Leaf P,  Seed dry mass, SLA) were downloaded 
 ## February 13 2023 (Request No: 24964)
-
+## LDMC was downloaded on March 04 2024 (Request No: 31973)
 ## focus on Height, LA, Leaf C, Leaf N, Leaf P,  Seed dry mass, SLA
 rm(list=ls())
 ## package needed 
@@ -17,7 +17,7 @@ library(FD)
 library(BIEN)
 # https://traitecoevo.github.io/austraits/
 # install.packages("remotes")
-library(remotes)
+#library(remotes)
 # remotes::install_github("traitecoevo/austraits", build = F, force = TRUE)
 library(austraits)
 
@@ -25,8 +25,8 @@ library(rworldmap)
 library(sp)
 
 # set the working directory 
-dir.data<-"H:/plant traits for NutNet/raw data/"
-dir.graphs<-"H:/plant traits for NutNet/graphs/"
+dir.data<-"C:/Users/chqq3/work/plant traits compiled for NutNet/raw data/"
+dir.graphs<-"C:/Users/chqq3/work/plant traits compiled for NutNet/"
 setwd(dir.graphs)
 
 ###################################################################################################
@@ -34,7 +34,10 @@ setwd(dir.graphs)
 ###################################################################################################
 tr1<-fread(paste0(dir.data, "24964.txt"))
 unique(tr1$TraitName)
-colnames(tr1)
+tr1.ldmc<-fread(paste0(dir.data, "31973.txt"))
+unique(tr1.ldmc$TraitName)
+
+colnames(tr1); colnames(tr1.ldmc)
 # add location information; find data for latitude, longitude and altitude under DataIDs 59, 60 and 61 as suggested by Jens Kattge
 check.names<-unique(tr1$DataName)
 
@@ -42,17 +45,20 @@ tr2.location<-tr1%>%select(ObservationID, DataID, DataName, OriglName, OrigValue
   filter(DataID%in%c(59, 60, 61))%>%distinct()
 table(tr2.location$DataName)
 unique(tr2.location$OriglName)
-tr2.location1<-tr2.location%>%mutate(OriglName=NULL, DataID=NULL, OrigValueStr=NULL)%>%distinct()%>%
+tr2.ldmc.location<-tr1.ldmc%>%select(ObservationID, DataID, DataName, OriglName, OrigValueStr, StdValue)%>%
+  filter(DataID%in%c(59, 60, 61))%>%distinct()
+
+tr2.location1<-tr2.location%>%rbind(tr2.ldmc.location)%>%mutate(OriglName=NULL, DataID=NULL, OrigValueStr=NULL)%>%distinct()%>%
   pivot_wider(names_from = "DataName", values_from = StdValue)%>%distinct()
 
-## select colnames interested 
+## select variable names interested 
 ## change the consolidated species names to match the data from nutrient network 
 ## capitalize all the species names 
 ## delete trait names that are empty 
-tr2<-tr1%>%select("DatasetID", "ObservationID", "AccSpeciesName" ,"TraitName" ,  "OrigValueStr", "OrigUnitStr", "ValueKindName","OrigUncertaintyStr", "UncertaintyName",  "StdValue", "UnitName", "ErrorRisk")%>%
+tr2<-tr1%>%rbind(tr1.ldmc)%>%select("DatasetID", "ObservationID", "AccSpeciesName" ,"TraitName" ,  "OrigValueStr", "OrigUnitStr", "ValueKindName","OrigUncertaintyStr", "UncertaintyName",  "StdValue", "UnitName", "ErrorRisk")%>%
   dplyr::rename(standard_taxon1=AccSpeciesName)%>%mutate(standard_taxon=toupper(standard_taxon1), standard_taxon1=NULL)%>%filter(!TraitName=="")%>%
   merge(tr2.location1, by=c("ObservationID"), all.x=T)
-
+unique(tr2$TraitName)
 ###################################################################################################
 ########################## check trait data from the TRY (units) ##################################
 ###################################################################################################
@@ -74,6 +80,9 @@ che.vege<-tr2%>%filter(TraitName=="Plant height vegetative")
 unique(che.vege$UnitName)##  "m" 
 table(che.vege$ValueKindName)# mainly measured by Single
 ## include both generative and vegetative height
+che.ldmc<-tr2%>%filter(TraitName=="Leaf dry mass per leaf fresh mass (leaf dry matter content, LDMC)" )
+unique(che.ldmc$UnitName) # "g/g"
+
 ## delete trait names that we are not interested 
 tr3<-tr2[-grep("content per leaf area", tr2$TraitName),]
 unique(tr3$TraitName)
@@ -88,6 +97,7 @@ tr3$TraitName1[grep("Leaf area per leaf dry mass", tr3$TraitName)]<-"SLA"
 tr3$TraitName1[grep("compound leaves", tr3$TraitName)]<-"LA"
 tr3$TraitName1[grep("height", tr3$TraitName)]<-"Height"
 tr3$TraitName1[grep("Plant biomass", tr3$TraitName)]<-"Aboveground biomass"
+tr3$TraitName1[grep("LDMC", tr3$TraitName)]<-"LDMC"
 unique(tr3$TraitName1)
 
 ##delete Error risk > 4  
@@ -104,7 +114,7 @@ unique(tr5$TraitName1)
 # check data set that require authorship 
 author.req<-readxl::read_excel(paste0(dir.data, "authorship required from TRY.xlsx"))
 check.restrition<-tr5%>%filter(DatasetID %in%author.req$DatasetID)
-nrow(check.restrition)/nrow(tr5) # 10% 
+nrow(check.restrition)/nrow(tr5) # 
 table(check.restrition$DatasetID)
 table(check.restrition$TraitName1)
 check.species.restrition<- unique(check.restrition$standard_taxon)
@@ -120,30 +130,35 @@ length(check.unique.species.not.free)/length(check.species.free)
 ###################################################################################################
 ################################## add traits from BIEN  ##########################################
 ###################################################################################################
+sessionInfo("BIEN")
+bien.traits<-BIEN_trait_list()
 
-BIEN_trait_list()
 tr.bien<- BIEN_trait_trait(trait= c("maximum whole plant height", "whole plant height",
+                                    "leaf dry mass per leaf fresh mass", 
                                     "leaf area",
                                     "leaf area per leaf dry mass",
                                     "leaf carbon content per leaf dry mass",
                                     "leaf nitrogen content per leaf dry mass",
                                     "leaf phosphorus content per leaf dry mass",
                                     "seed mass", "root dry mass", "stem dry mass"))
+
 unique(tr.bien$trait_name)
 unique(tr.bien$method)
 colnames(tr.bien)
 # select variables of interesting including lat and long data 
 # delete repeats (a lot of repeats)
-tr.bien1<-tr.bien%>%select("scrubbed_species_binomial", "trait_name",  "trait_value", "unit", "latitude","longitude", "elevation_m")%>%                
-  dplyr::rename(standard_taxon1=scrubbed_species_binomial)%>%
-  mutate(standard_taxon=toupper(standard_taxon1), standard_taxon1=NULL, TraitName1=trait_name, UnitName=unit, StdValue=as.numeric(trait_value))%>%
-  mutate(database="BIEN")%>%unique()
+tr.bien1<-tr.bien%>%select("scrubbed_species_binomial", "unit", "latitude", "longitude",  "elevation_m", "url_source", "project_pi",  "project_pi_contact",  "access",  "trait_name","trait_value")%>%                
+  mutate(trait_value=as.numeric(trait_value))%>%        
+  mutate(standard_taxon=toupper(scrubbed_species_binomial), scrubbed_species_binomial=NULL)%>%
+  dplyr::rename(TraitName1=trait_name, UnitName=unit, StdValue=trait_value)%>% mutate(database="BIEN")%>%unique()
 unique(tr.bien1$UnitName)
 
 ###################################################################################################
 ################################### traits from  Australia ########################################
 ###################################################################################################
-austraits <- load_austraits(version="4.0.0")
+#sessionInfo("austraits")
+#get_versions("austraits")
+austraits <- load_austraits(version="5.0.0")
 summary(austraits)
 austraits$taxonomic_updates
 
@@ -159,6 +174,7 @@ length(unique(au$taxon_name))
 traits <- au$trait_name %>% unique()  #All possible traits 
 (leaf_traits <- traits[str_which(traits, "leaf")]) # Extracting data where "leaf" occurs in the trait_name
 (leaf_area<- leaf_traits[str_which(leaf_traits, "area")])
+(leaf_ldmc<- leaf_traits[str_which(leaf_traits, "fresh")])
 (height_traits <- traits[str_which(traits, "height")]) # Extracting data where "height" occurs in the trait_name
 (biomass_shoot_traits <- traits[str_which(traits, "shoot")]) # Extracting data where "shoot" occurs in the trait_name
 (biomass_traits <- traits[str_which(traits, "mass")]) # Extracting data where "biomass" occurs in the trait_name
@@ -180,19 +196,25 @@ site.inf<-austraits$locations%>%filter(grepl("lat|long|elev", location_property)
   pivot_wider(names_from ="site.pro", values_from = "value")
 colnames(site.inf)  
 
+# calculate LDMC
+au%>%filter(trait_name%in% c("leaf_dry_mass", "leaf_fresh_mass"))%>%select(unit)%>%distinct() # same units 
+aus.ldmc<-au%>%filter(trait_name%in% c("leaf_dry_mass", "leaf_fresh_mass"))%>%pivot_wider(names_from ="trait_name", values_from = "value" )%>%
+  mutate(LDMC=as.numeric(leaf_dry_mass) /as.numeric(leaf_fresh_mass ))%>%filter(! is.na(LDMC))%>%mutate(leaf_dry_mass=NULL, leaf_fresh_mass=NULL)%>%
+  pivot_longer(cols = c("LDMC"), names_to ="trait_name", values_to = "value" )%>%relocate(c("trait_name", "value" ), .before=unit)
+colnames(aus.ldmc); colnames(au)
 ## select traits that interesting
 traits.list<-c("leaf_area", "leaf_N_per_dry_mass", "leaf_mass_per_area", "seed_dry_mass", "plant_height", 
                "leaf_P_per_dry_mass", "leaf_C_per_dry_mass", 
                "leaf_K_per_dry_mass", "root_N_per_dry_mass", "root_dry_matter_content", "root_C_per_dry_mass", "root_specific_root_area")
 
 ## get species with continuous traits listed above
-colnames(au)
-au1<-au%>%filter(trait_name%in%traits.list)%>%merge(site.inf, by=c("dataset_id", "location_id"), all.x=T)
+au1<-au%>%filter(trait_name%in%traits.list)%>%rbind(aus.ldmc)%>% merge(site.inf, by=c("dataset_id", "location_id"), all.x=T)
+unique(au1$unit)
 table(au1$trait_name)
 
 ## check whether each trait name has only one unit 
-(che.unit<-au%>%filter(trait_name%in%traits.list)%>%select(trait_name, unit)%>%distinct())
-# attention, leaf_mass_per_area is 1/SLA
+(che.unit<-au1%>%select(trait_name, unit)%>%distinct())
+# attention, leaf_mass_per_area is 1/SLA; also the unit for LDMC is mg/mg, which is equal to g/g
 ## add the units and indicate that trait data were collected from Australia
 # delete repeats
 au2<-au1%>%mutate(database="Aus")%>%unique()
@@ -203,7 +225,6 @@ au2<-au1%>%mutate(database="Aus")%>%unique()
 # for leaf nutrients
 l.nutnet<-read.csv(paste0(dir.data, "foliar_cover_updated_3.csv"))
 str(l.nutnet)
-colnames(l.nutnet)[1]<-"site_code"
 ## convert to long version 
 colnames(l.nutnet)
 l.nutnet1<-l.nutnet%>%
@@ -215,25 +236,17 @@ l.nut.root<-read.csv(paste0(dir.data, "root-biomass-Cleand-et-al-2019.csv"))
 # seems like root biomass data at the community level, this does not help. 
 
 ###################################################################################################
-#############################root trait data from Groot ##########################################
-###################################################################################################
-# (Guerrero-Ram?rez et al., 2021)
-# Global root traits (GRooT) database. Global Ecology and Biogeography, 30(1), 25-37. https://doi.org/10.1111/geb.13179
-# We standardized original species names using the Taxonomic Name Resolution Service v.4.0
-# (i.e., TNRS; http://tnrs.iplan tcoll abora tive.org/; accessed September 2019; Boyle et al., 2013), 
-groots<-read.csv(paste0(dir.data, "GRooTFullVersion.csv"))
-colnames(groots)
-groots1<-groots%>%select("family", "genus", "species", "familyTNRS", "genusTNRS", "speciesTNRS", "traitName",  "traitValue", "errorRiskEntries", "errorRisk", "location", "decimalLatitude", "decimalLongitud", "elevation")                      
-# check species 
-check.species<-groots1%>%select("family", "genus", "species", "familyTNRS", "genusTNRS", "speciesTNRS")%>%distinct()
-# really weird species names  (also do not understand what is speciesTNRS)
-###################################################################################################
 ################################## combine all traits together#####################################
+# first average within data contributors, then average within databases, then across databases  
 ###################################################################################################
+
+options(scipen=999, digits = 3)
 ## unify species name, trait name, and trait unit
 colnames(tr5.authorship.free)
 (uni.try.nu<-tr5.authorship.free%>%group_by(TraitName1, UnitName)%>%select(TraitName1, UnitName)%>%distinct())
-tr6<-tr5.authorship.free%>%select(database, Latitude, Longitude, Altitude, standard_taxon, TraitName1, UnitName, StdValue)
+tr6<-tr5.authorship.free%>%group_by(database, DatasetID, Latitude, Longitude, Altitude, standard_taxon, TraitName1, UnitName)%>%mutate(StdValue_avg_within_contributors=mean(StdValue))%>%
+  group_by(database, Latitude, Longitude, Altitude, standard_taxon, TraitName1, UnitName)%>%mutate(StdValue_avg_across_contributors=mean(StdValue_avg_within_contributors))%>%
+   select(database, DatasetID, ObservationID, Latitude, Longitude, Altitude, standard_taxon, TraitName1, UnitName, StdValue, StdValue_avg_within_contributors, StdValue_avg_across_contributors)%>%arrange(standard_taxon, TraitName1)
 ###################################################################################################
 ## for data from Australia 
 colnames(au2)
@@ -254,8 +267,10 @@ unique(au2$trait_name1)
 ## capitalize the species names 
 colnames(au2)
 au3<-au2%>%mutate(standard_taxon=toupper(taxon_name), value0=as.numeric(value))%>%mutate(value1=ifelse(trait_name1=="SLA", 1/(value0/1000), value0))%>%
-  select(database, latitude, longitude, altitude, standard_taxon, trait_name1, unit, value1)
-names(au3)<-c("database", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue")
+  group_by(database, dataset_id, latitude, longitude, altitude, standard_taxon, trait_name1, unit)%>%mutate(StdValue_avg_within_contributors=mean(value1))%>%
+  group_by(database, latitude, longitude, altitude, standard_taxon, trait_name1, unit)%>%mutate(StdValue_avg_across_contributors=mean(StdValue_avg_within_contributors))%>%
+   select(database, dataset_id, observation_id, latitude, longitude, altitude, standard_taxon, trait_name1, unit, value1, StdValue_avg_within_contributors, StdValue_avg_across_contributors)%>%arrange(standard_taxon, trait_name1)
+names(au3)<-c("database", "DatasetID", "ObservationID", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue", "StdValue_avg_within_contributors", "StdValue_avg_across_contributors")
 check.sla<-au3%>%filter(TraitName1=="SLA")
 range(check.sla$StdValue)
 # compare with try 
@@ -264,22 +279,30 @@ range(tr6[tr6$TraitName1=="SLA",]$StdValue)
 ## for data from BIEN
 colnames(tr.bien1)
 (uni.us.nu<-tr.bien1%>%group_by("TraitName1", "UnitName")%>%select("TraitName1", "UnitName")%>%distinct())
-tr.bien2<-tr.bien1%>%mutate(StdValue1=ifelse(TraitName1=="stem dry mass", StdValue*1000, StdValue))
+# units are Not the same, need adjustment 
+# leaf dry mass per leaf fresh mass         mg.g-1 
+# stem dry mass                             kg   
 ## simplify the trait name 
-unique(au2$trait_name1)
-tr.bien2$TraitName11<-tr.bien2$TraitName1
-tr.bien2$TraitName11[tr.bien2$TraitName1=="leaf nitrogen content per leaf dry mass"]<-"Leaf N"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="leaf carbon content per leaf dry mass"]<-"Leaf C"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="leaf phosphorus content per leaf dry mass"]<-"Leaf P"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="leaf area"]<-"LA"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="leaf area per leaf dry mass"]<-"SLA"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="seed mass"]<-"Seed dry mass"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="stem dry mass"]<-"Aboveground biomass"
-tr.bien2$TraitName11[tr.bien2$TraitName1=="maximum whole plant height"|tr.bien2$TraitName1=="whole plant height"]<-"Height"
-unique(tr.bien2$TraitName11)
-colnames(tr.bien2)
-tr.bien3<-tr.bien2%>%ungroup()%>%select(database, latitude, longitude, elevation_m, standard_taxon, TraitName11, UnitName, StdValue1)
-names(tr.bien3)<-c("database", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue")
+unique(tr.bien1$TraitName1)
+tr.bien1$TraitName11<-tr.bien1$TraitName1
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf nitrogen content per leaf dry mass"]<-"Leaf N"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf carbon content per leaf dry mass"]<-"Leaf C"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf phosphorus content per leaf dry mass"]<-"Leaf P"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf area"]<-"LA"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf area per leaf dry mass"]<-"SLA"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="leaf dry mass per leaf fresh mass"]<-"LDMC"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="seed mass"]<-"Seed dry mass"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="stem dry mass"]<-"Aboveground biomass"
+tr.bien1$TraitName11[tr.bien1$TraitName1=="maximum whole plant height"|tr.bien1$TraitName1=="whole plant height"]<-"Height"
+unique(tr.bien1$TraitName11)
+colnames(tr.bien1)
+
+tr.bien3<-tr.bien1%>%mutate(StdValue1=ifelse(TraitName1=="stem dry mass", StdValue*1000, StdValue))%>%
+  mutate(StdValue2=ifelse(TraitName1=="leaf dry mass per leaf fresh mass", StdValue1/1000, StdValue1))%>%ungroup()%>%
+  group_by(database, project_pi, latitude, longitude, elevation_m, standard_taxon, TraitName11, UnitName)%>%mutate(StdValue_avg_within_contributors=mean(StdValue2))%>%
+  group_by(database, latitude, longitude, elevation_m, standard_taxon, TraitName11, UnitName)%>%mutate(StdValue_avg_across_contributors=mean(StdValue_avg_within_contributors))%>%
+  select(database, project_pi, url_source, latitude, longitude, elevation_m, standard_taxon, TraitName11, UnitName, StdValue2, StdValue_avg_within_contributors, StdValue_avg_across_contributors)%>%arrange(standard_taxon, TraitName11)
+names(tr.bien3)<-c("database","DatasetID", "ObservationID", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue", "StdValue_avg_within_contributors", "StdValue_avg_across_contributors")
 
 ###################################################################################################
 ## for nutnet data 
@@ -298,8 +321,11 @@ l.nutnet2$TraitName1[l.nutnet2$TraitName=="leaf_pct_P"]<-"Leaf P"
 l.nutnet2$TraitName1[l.nutnet2$TraitName=="leaf_pct_K"]<-"Leaf K"
 l.nutnet2$TraitName1[l.nutnet2$TraitName=="SLA_v2"]<-"SLA"
 colnames(l.nutnet2)
-l.nutnet3<-l.nutnet2%>%mutate(elevation_m=NA)%>%select(database, latitude, longitude, elevation_m, Taxon, TraitName1, UnitName, StdValue1)
-names(l.nutnet3)<-c("database", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue")
+l.nutnet3<-l.nutnet2%>%mutate(elevation_m=NA)%>%
+  group_by(database, site_code, latitude, longitude, elevation_m, Taxon, TraitName1, UnitName)%>%mutate(StdValue_avg_within_contributors=mean(StdValue1))%>%
+  group_by(database, latitude, longitude, elevation_m, Taxon, TraitName1, UnitName)%>%mutate(StdValue_avg_across_contributors=mean(StdValue_avg_within_contributors))%>%
+  select(database,site_code, trt, latitude, longitude, elevation_m, Taxon, TraitName1, UnitName, StdValue1, StdValue_avg_within_contributors, StdValue_avg_across_contributors)%>%arrange(Taxon, TraitName1)
+names(l.nutnet3)<-c("database","DatasetID", "ObservationID", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue", "StdValue_avg_within_contributors", "StdValue_avg_across_contributors")
 
 ###################################################################################################
 ################################### add all traits together########################################
@@ -313,45 +339,34 @@ au3$Latitude<-as.numeric(au3$Latitude)
 au3$Longitude<-as.numeric(au3$Longitude)
 au3$Altitude<-as.numeric(au3$Altitude)
 
-all.traits<-tr6%>%bind_rows(y=au3)%>%bind_rows(y=tr.bien3)%>%bind_rows(y=l.nutnet3)%>%unique()  
+all.traits<-tr6%>%mutate(DatasetID=as.character(DatasetID), ObservationID=as.character(ObservationID), Latitude=as.numeric(Latitude), Longitude=as.numeric(Longitude), Altitude=as.numeric(Altitude))%>%
+  bind_rows(y=au3%>%mutate(DatasetID=as.character(DatasetID), ObservationID=as.character(ObservationID), Latitude=as.numeric(Latitude), Longitude=as.numeric(Longitude), Altitude=as.numeric(Altitude)))%>%
+  bind_rows(y=tr.bien3%>%mutate(DatasetID=as.character(DatasetID), ObservationID=as.character(ObservationID), Latitude=as.numeric(Latitude), Longitude=as.numeric(Longitude), Altitude=as.numeric(Altitude)))%>%
+  bind_rows(y=l.nutnet3%>%mutate(DatasetID=as.character(DatasetID), ObservationID=as.character(ObservationID), Latitude=as.numeric(Latitude), Longitude=as.numeric(Longitude), Altitude=as.numeric(Altitude)))%>%
+  unique()  
 
-# add continent information to the data using the following function
-# https://stackoverflow.com/questions/21708488/get-country-and-continent-from-longitude-and-latitude-point-in-r
-coords2continent = function(points)
-{  
-  countriesSP <- getMap(resolution='low')
-  #countriesSP <- getMap(resolution='high') #you could use high res map from rworldxtra if you were concerned about detail
-  
-  # converting points to a SpatialPoints object
-  # setting CRS directly to that from rworldmap
-  pointsSP = SpatialPoints(points, proj4string=CRS(proj4string(countriesSP)))  
-  
-  # use 'over' to get indices of the Polygons object containing each point 
-  indices = over(pointsSP, countriesSP)
-  
-  c(indices$REGION,   # returns the continent (7 continent model)
-    indices$ADMIN)  #returns country name
-}
-points <-all.traits%>%select(Longitude, Latitude)%>%unique()%>%filter(!is.na(Longitude))%>%filter(!is.na(Latitude))
-temp.data<-coords2continent(points)
-length(temp.data)
-points$continent<-temp.data[1:(length(temp.data)/2)]
-unique(points$continent)
-points$country<-temp.data[((length(temp.data)/2)+1):length(temp.data)]
-# add continents and countries 
 # adjust unit name for each trait
-all.traits1<-all.traits%>%merge(y=points, by=c("Longitude", "Latitude"))%>%
+colnames(all.traits)
+unique(all.traits$TraitName1)
+
+all.traits1<-all.traits%>%ungroup()%>%filter(!grepl("root", TraitName1))%>%
   mutate(UnitName1=case_when(TraitName1 %in% c("Leaf C", "Leaf N", "Leaf P", "Leaf K")~"mg/g",
                              TraitName1 %in% c("Height")~"m",
                              TraitName1 %in% c("SLA")~"mm2/mg",
                              TraitName1 %in% c("LA")~"mm2",
                              TraitName1 %in% c("Seed dry mass")~"mg",
                              TraitName1 %in% c("Aboveground biomass")~"g",
-                             TRUE~UnitName), UnitName=NULL)
-# save this data set 
+                             TraitName1 %in% c("LDMC")~"%"), UnitName=NULL)
+check.traits.and.units<-all.traits1%>%ungroup()%>%select(TraitName1, UnitName1)%>%distinct()
+
 # check trait value distribution
-ggplot(all.traits1)+geom_histogram(aes(x=StdValue))+facet_wrap(~TraitName1, scales="free")
+ggplot(all.traits1)+geom_histogram(aes(x=StdValue))+facet_grid(database~TraitName1, scales="free_x")
+# check data range 
+check.range<-all.traits1%>%group_by(database, TraitName1)%>%summarise(min.v=min(StdValue), max.v=max(StdValue))
+# LDMC should not be more than 1, but this is observed in AusTraits and BIEN
+# save this data set 
 # fwrite(all.traits1, file ="combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv" )
+
 
 
 ###################################################################################################
@@ -359,7 +374,7 @@ ggplot(all.traits1)+geom_histogram(aes(x=StdValue))+facet_wrap(~TraitName1, scal
 ###################################################################################################
 
 # read the cover data and adjust the taxa for NutNet sites 
-d.cov<-read.csv(paste0(dir.data, "full-cover-2022-11-15.csv"), header = T, sep=",")
+d.cov<-read.csv(paste0(dir.data, "full-cover_2023-11-07.csv"), header = T, sep=",")
 taxa.adj<-read.csv(paste0(dir.data, "site-taxonomy-2022-07-13.csv"))
 taxa.adj1<-taxa.adj%>%mutate(Taxon=toupper(local_name), standard_taxon_temp=toupper(standard_taxon))
 # check whether we need to adjust taxa names
@@ -380,10 +395,11 @@ table(all.traits1$TraitName1)
 table(all.traits1$continent)
 table(all.traits1$database)
 
+all.traits1<- read.csv("combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv")
 
 all.traits.for.nutnet<-all.traits1%>%filter(standard_taxon%in%d7$standard_taxon)%>%
   # filter(!is.na(continent))%>% # reduce quite records, maybe no need to filter out data without geolocation
-  arrange(continent, standard_taxon, TraitName1)
+  arrange(standard_taxon, TraitName1)
 table(all.traits.for.nutnet$continent)
 
 # average over continents 
@@ -394,7 +410,6 @@ table(all.traits.for.nutnet.avg.1$TraitName1) # root traits and Aboveground biom
 
 # get species level trait data
 sp.level.trait.nutnet<-all.traits.for.nutnet.avg.1%>%filter(standard_taxon%in%all.spp)
-
 
 # fill NAs for species for each trait without species-level trait value
 all.traits1a<-all.traits1[-grep("root|Aboveground", all.traits1$TraitName1),]# excluded root traits  
