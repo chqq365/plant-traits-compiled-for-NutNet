@@ -236,7 +236,7 @@ l.nut.root<-read.csv(paste0(dir.data, "root-biomass-Cleand-et-al-2019.csv"))
 # seems like root biomass data at the community level, this does not help. 
 
 ###################################################################################################
-################################## combine all traits together#####################################
+#combine all traits together
 # first average within data contributors, then average within databases, then across databases  
 ###################################################################################################
 
@@ -367,8 +367,6 @@ check.range<-all.traits1%>%group_by(database, TraitName1)%>%summarise(min.v=min(
 # save this data set 
 # fwrite(all.traits1, file ="combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv" )
 
-
-
 ###################################################################################################
 ###################### check trait records for species occur at NutNet sites#######################
 ###################################################################################################
@@ -392,7 +390,6 @@ d7 <- d7[! d7$Family %in% c( "Phallales") , ]
 all.spp<-unique(d7$standard_taxon) # species list 
 
 table(all.traits1$TraitName1)
-table(all.traits1$continent)
 table(all.traits1$database)
 
 all.traits1<- read.csv("combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv")
@@ -400,7 +397,6 @@ all.traits1<- read.csv("combining traits at individual level from TRY, BIEN, Aus
 all.traits.for.nutnet<-all.traits1%>%filter(standard_taxon%in%d7$standard_taxon)%>%
   # filter(!is.na(continent))%>% # reduce quite records, maybe no need to filter out data without geolocation
   arrange(standard_taxon, TraitName1)
-table(all.traits.for.nutnet$continent)
 
 # average over continents 
 all.traits.for.nutnet.avg<-all.traits.for.nutnet%>%group_by(standard_taxon, TraitName1)%>%summarise(avg.value=mean(StdValue))
@@ -464,24 +460,23 @@ sp.nutnet_12$extreme.values<-factor(sp.nutnet_12$extreme.values, levels = c("Yes
     facet_wrap(~TraitName1, scales="free"))
 ggsave(pp.distribution, width=13.3,height=6.64, file="distribution of trait values including and excluding extreme values.png")
 
-
 # change data to wide version, focus on traits with high coverage for species (leaf K was deleted)
-sp.nutnet.w<-sp.nutnet2%>%mutate(data.type=NULL, extreme.values=NULL)%>%filter(TraitName1 %in%c("Height", "Seed dry mass", "SLA", "LA", "Leaf N", "Leaf C", "Leaf P"))%>%
+sp.nutnet.w<-sp.nutnet2%>%mutate(data.type=NULL, extreme.values=NULL)%>%filter(TraitName1 %in%c("Height", "Seed dry mass", "LDMC", "SLA", "LA", "Leaf N", "Leaf C", "Leaf P"))%>%
   pivot_wider(names_from = TraitName1, values_from = avg.value)
 
-colnames(sp.nutnet.w)<-c("standard_taxon", "Leaf N", "Height",  "LA",  "Leaf P", "Seed mass",  "SLA",  "Leaf C")
-(pp1<-ggpairs(sp.nutnet.w[,c("Height", "Seed mass", "LA", "Leaf C", "Leaf N", "Leaf P",  "SLA")])+theme_bw(base_size = 20)+
+colnames(sp.nutnet.w)<-c("standard_taxon", "Height", "Seed mass", "Leaf N", "LA",  "Leaf P", "SLA", "LDMC", "Leaf C")
+(pp1<-ggpairs(sp.nutnet.w[,c("Height", "Seed mass", "LDMC",  "SLA", "LA", "Leaf C", "Leaf N", "Leaf P")])+theme_bw(base_size = 15)+
     labs(title=paste0("pairwise correlation based on ", nrow(sp.nutnet.w), " NutNet species (in total ", length(all.spp), " species occurred)")))
 ggsave(pp1, width=13.3,height=6.64, file="correlation among traits.png")
 
 ## check PCA plot using 6 traits with all traits 
-sp.nutnet.w.na.omit<-sp.nutnet.w %>% filter_at(vars("Height", "Seed mass", "LA", "Leaf C", "Leaf N", "Leaf P", "SLA"),all_vars(!is.na(.)))
+sp.nutnet.w.na.omit<-sp.nutnet.w %>% filter_at(vars("Height", "Seed mass", "LDMC",  "SLA", "LA", "Leaf C", "Leaf N", "Leaf P"),all_vars(!is.na(.)))
 # 
-pca.r<-PCA(sp.nutnet.w.na.omit[,c("Height", "LA", "Leaf C", "Leaf N", "Leaf P", "Seed mass", "SLA")], scale=T, graph=F)
+pca.r<-PCA(sp.nutnet.w.na.omit[,c("Height", "Seed mass", "LDMC",  "SLA", "LA", "Leaf C", "Leaf N", "Leaf P")], scale=T, graph=F)
 summary(pca.r)## 
 # visualize 
-fviz_pca_var(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = NULL)+theme_bw(base_size=18)
-(pp2<-fviz_pca_biplot(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = paste0("PCA based on ", nrow(sp.nutnet.w.na.omit), " species having all 7 traits (in total ", length(all.spp), " species occurred)"))+theme_bw(base_size=18))
+fviz_pca_var(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = NULL)+theme_bw(base_size=15)
+(pp2<-fviz_pca_biplot(pca.r, label = "var", alpha.ind =0.5, pointsize=2, title = paste0("PCA based on ", nrow(sp.nutnet.w.na.omit), " species having all 8 traits (in total ", length(all.spp), " species occurred)"))+theme_bw(base_size=18))
 ggsave(pp2, width=13.3,height=6.64, file="pca among traits.png")
 
 # there are two sets of traits, related to size and leaf traits 
