@@ -1,8 +1,7 @@
 # Functional traits compilied from global databases for NutNet species 
 compiling trait data from TRY (version 6), AusTraits(2.1.2), BIEN(version 1.2.6)
 
-# Please contact me for trait data from TRY, they are large files, I do not have enough space for it in google drive. The output files can be found in [https://www.dropbox.com/scl/fo/sj6kwbrfppdsiqx2mzk75/h?dl=0&rlkey=f6idfy0nvevnuv6yy3sgw9a4i](https://drive.google.com/drive/folders/1ulqyzxbQq2bE_Xshn-ekbaVuBZbcJlbP?usp=sharing)
-
+# Trait data as well as the output files can be found in [https://www.dropbox.com/scl/fo/sj6kwbrfppdsiqx2mzk75/h?dl=0&rlkey=f6idfy0nvevnuv6yy3sgw9a4i]
 
 # this R file generates 2 important output files 
 # file 1 "combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv", 
