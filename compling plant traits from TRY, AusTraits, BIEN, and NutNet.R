@@ -392,8 +392,6 @@ all.spp<-unique(d7$standard_taxon) # species list
 table(all.traits1$TraitName1)
 table(all.traits1$database)
 
-all.traits1<- read.csv("combining traits at individual level from TRY, BIEN, Aus, and NutNet.csv")
-
 all.traits.for.nutnet<-all.traits1%>%filter(standard_taxon%in%d7$standard_taxon)%>%
   # filter(!is.na(continent))%>% # reduce quite records, maybe no need to filter out data without geolocation
   arrange(standard_taxon, TraitName1)
@@ -502,5 +500,52 @@ colnames(trait.inf4)<-c("TraitName", "percent species with traits",
 
 
 # fwrite(trait.inf4, file="summary of trait information.csv")
+
+###########################################################################################
+## calculate functional diversity and community weighted mean traits for NutNet control plots
+###########################################################################################
+sp.and.genus.level.traits.nutnet<- fread(file="species and genus level traits from TRY, Aus, BIEN, and NutNet for NutNet species.csv")
+
+colnames(sp.and.genus.level.traits.nutnet)
+check<-sp.and.genus.level.traits.nutnet%>%filter(grepl("AA", standard_taxon))
+
+# add species with traits to the cover data 
+# focus on year_trt>0 and control plots 
+d8.l<-d7%>%filter(max_cover>0 & year_trt>0 & trt=="Control")%>%
+  select(site_code, trt, standard_taxon, block, plot,  trt, year_trt, year, max_cover)%>% distinct()%>%
+  group_by(site_code, block, plot,  trt, year_trt, year, standard_taxon)%>%summarise(max_cover1=mean(max_cover))%>%
+   group_by(site_code, block, plot,  trt, year_trt)%>%mutate(total_cover=sum(max_cover1))%>%
+  mutate(plot.id=paste(site_code, block, plot,  trt, year_trt, sep="_"))%>%
+  merge(sp.and.genus.level.traits.nutnet%>%distinct(), by=c("standard_taxon"))%>%filter(!standard_taxon %in% c("UNKNOWN"))%>% distinct()
+length(unique(d8.l$standard_taxon))
+
+hist(d8.l$total_cover)
+check.na.t<-d8.l[is.na(d8.l$avg.value),]
+check.na.c<-d8.l[is.na(d8.l$max_cover),]
+
+community.traits<-c()
+for(tr in unique(d8.l$TraitName1)){
+  for (pl in unique(d8.l$plot.id)){
+    # pl<-"look.us_1_10_NK_12" ; tr<-"Leaf C"
+    temp.data<-d8.l%>%filter(plot.id==pl & TraitName1==tr)
+    sp.tr<-temp.data$avg.value
+    names(sp.tr)<-temp.data$standard_taxon
+    abund1<-temp.data$max_cover1
+    names(abund1)<-temp.data$standard_taxon
+    total_cover_traits<-sum(abund1) # total cover with traits
+    # 1 species is not possible to calculate fd, but possible to calculate cwm, two species with same trait value is not possible either
+    if(length(unique(sp.tr))<2) 
+      next
+    (fd.temp <- dbFD(sp.tr, abund1, calc.FRic = F, calc.FDiv = F, w.abun=T))##  
+    temp.traits<-data.frame(plot.id=pl, f.dispersion=fd.temp$FDis, cwm1=fd.temp$CWM[,1],
+                            f.richness=fd.temp$sing.sp, total_cover_traits=total_cover_traits, trait.name=tr)
+    community.traits<-rbind(community.traits, temp.traits)
+  }
+}
+colnames(community.traits)
+community.traits1<-d8.l%>%select(plot.id, site_code, block, plot, trt, year_trt, total_cover)%>%distinct()%>%merge(community.traits, by=c("plot.id"))
+# check the traits used 
+table(community.traits1$trait.name)
+fwrite(community.traits1, file="functional diversity and community weighted mean of single traits extracted from global databases for NutNet plots.csv")
 
 # the end 
