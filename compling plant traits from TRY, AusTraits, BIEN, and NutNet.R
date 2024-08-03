@@ -21,9 +21,6 @@ library(BIEN)
 # remotes::install_github("traitecoevo/austraits", build = F, force = TRUE)
 library(austraits)
 
-library(rworldmap) 
-library(sp)
-
 # set the working directory 
 dir.data<-"C:/Users/chqq3/work/plant traits compiled for NutNet/raw data/"
 dir.graphs<-"C:/Users/chqq3/work/plant traits compiled for NutNet/"
@@ -157,7 +154,6 @@ unique(tr.bien1$UnitName)
 ################################### traits from  Australia ########################################
 ###################################################################################################
 #sessionInfo("austraits")
-#get_versions("austraits")
 austraits <- load_austraits(version="5.0.0")
 summary(austraits)
 austraits$taxonomic_updates
@@ -327,9 +323,6 @@ l.nutnet3<-l.nutnet2%>%mutate(elevation_m=NA)%>%
   select(database,site_code, trt, latitude, longitude, elevation_m, Taxon, TraitName1, UnitName, StdValue1, StdValue_avg_within_contributors, StdValue_avg_across_contributors)%>%arrange(Taxon, TraitName1)
 names(l.nutnet3)<-c("database","DatasetID", "ObservationID", "Latitude", "Longitude", "Altitude", "standard_taxon", "TraitName1", "UnitName", "StdValue", "StdValue_avg_within_contributors", "StdValue_avg_across_contributors")
 
-###################################################################################################
-################################### add all traits together########################################
-###################################################################################################
 # add traits from all sources together 
 colnames(tr6)
 colnames(au3)
