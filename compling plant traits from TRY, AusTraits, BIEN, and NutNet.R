@@ -504,7 +504,7 @@ colnames(trait.inf4)<-c("TraitName", "percent species with traits",
 ###########################################################################################
 ## calculate functional diversity and community weighted mean traits for NutNet control plots
 ###########################################################################################
-sp.and.genus.level.traits.nutnet<- fread(file="species and genus level traits from TRY, Aus, BIEN, and NutNet for NutNet species.csv")
+# sp.and.genus.level.traits.nutnet<- fread(file="species and genus level traits from TRY, Aus, BIEN, and NutNet for NutNet species.csv")
 
 colnames(sp.and.genus.level.traits.nutnet)
 check<-sp.and.genus.level.traits.nutnet%>%filter(grepl("AA", standard_taxon))
