@@ -498,7 +498,6 @@ colnames(trait.inf4)<-c("TraitName", "percent species with traits",
                         "percent species with traits at species level from TRY",       "percent species with traits at species level from AusTrait" ,
                         "percent species with traits at species level from BEIN data",  "percent species with traits at species level from NutNet" )  
 
-
 # fwrite(trait.inf4, file="summary of trait information.csv")
 
 ###########################################################################################
